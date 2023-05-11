@@ -4,11 +4,26 @@ Divides a b = (m ** (a*m = b))
 Prime: Nat -> Type
 Prime p = (Not (p=1), (x: Nat) -> Divides x p -> Either (x = 1) (x = p))
 
-four_divides_zero: Divides 4 0
-four_divides_zero = (0 ** (4*0 = 0))
+four_divides_zero: Divides 2 0
+four_divides_zero = (0 ** Refl)
+
+prev: Nat -> Nat 
+prev Z = Z
+prev (S x) = x
+
+prev_ok: (x=y) -> (prev x = prev y)
+prev_ok Refl = Refl
 
 no_prime_is_zero: (p: Nat) -> (Prime p) -> Not (p=0)
-no_prime_is_zero p (p_not_1, p_is_prime) p_is_zero = ?todo_npz
+no_prime_is_zero p (p_not_1, p_is_prime) p_is_zero = case p_is_prime 2 (rewrite p_is_zero in four_divides_zero) of 
+        Left two_is_one => let 
+            one_is_zero = prev_ok two_is_one
+            p_is_one = trans (p_is_zero) (sym one_is_zero) in (p_not_1 p_is_one)
+        Right y => let 
+            one_is_zero = prev_ok (trans (sym p_is_zero) (sym y))
+            p_is_one = trans (p_is_zero) one_is_zero
+            in (p_not_1 p_is_one)
+
 
 x_divides_xx: (x: Nat) -> Divides x (x*x)
 x_divides_xx x = ?todo_xx

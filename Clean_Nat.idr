@@ -14,109 +14,145 @@ import Builtins
 
 ||| Natural numbers: unbounded, unsigned integers which can be pattern
 ||| matched.
-data Nat =
+data Nat_Num =
     ||| Zero
-    Z |
+    Zero |
     ||| Successor
-    S Nat
+    Succ Nat_Num
 
-||| 1. +
+||| Convert an Integer to a Nat, mapping negative numbers to 0
+fromIntegerNatNum : Integer -> Nat_Num
+fromIntegerNatNum 0 = Zero
+fromIntegerNatNum n =
+  if (n > 0) then
+    Succ (fromIntegerNatNum (assert_smaller n (n - 1)))
+  else
+    Zero
+
+-- 1. +
 ||| Add two natural numbers.
 ||| @ n the number to case-split on
 ||| @ m the other number
-plus : (n, m : Nat) -> Nat
-plus Z right        = right
-plus (S left) right = S (plus left right)
+Plus : (n, m : Nat_Num) -> Nat_Num
+Plus Zero right        = right
+Plus (Succ left) right = Succ (Plus left right)
 
-||| 2. +0=
+Mult : Nat_Num -> Nat_Num -> Nat_Num
+Mult Zero right        = Zero
+Mult (Succ left) right = Plus right $ Mult left right
 
-plusZeroLeftNeutral : (right : Nat) -> 0 + right = right
-plusZeroLeftNeutral right = Refl
 
-plusZeroRightNeutral : (left : Nat) -> left + 0 = left
-plusZeroRightNeutral Z     = Refl
-plusZeroRightNeutral (S n) = rewrite plusZeroRightNeutral n in Refl
+Eq Nat_Num where 
+  Zero == Zero = True
+  (Succ val) == (Succ otherVal) = val == otherVal
+  _ == _ = False
 
-||| 3. add1+=+add1
-plusSuccRightSucc : (left, right : Nat) -> S (left + right) = left + (S right)
-plusSuccRightSucc Z _ = Refl
-plusSuccRightSucc (S left) right = rewrite plusSuccRightSucc left right in Refl
+-- Cast Nat Integer where
+--   cast = toIntegerNat
 
-||| 4. comm+
+Ord Nat_Num where
+  compare Zero Zero         = EQ
+  compare Zero (Succ k)     = LT
+  compare (Succ k) Zero     = GT
+  compare (Succ x) (Succ y) = compare x y
 
-plusCommutative : (left, right : Nat) -> left + right = right + left
-plusCommutative Z right = rewrite plusZeroRightNeutral right in Refl
-plusCommutative (S left) right =
-  rewrite plusCommutative left right in
-    rewrite plusSuccRightSucc right left in
+Num Nat_Num where
+  (+) = Plus
+  (*) = Mult
+  fromInteger = fromIntegerNatNum
+
+
+
+--2. +0=
+-- PUT THIS IN PRESENTATION..
+
+plus_zero_left : (right : Nat_Num) -> (Plus 0 right) = right
+plus_zero_left Zero = Refl
+-- plus_zero_neutral_left (Succ n) = rewrite plus_zero_neutral_left n in Refl
+
+plus_zero_right : (left : Nat_Num) -> (Plus left 0) = left
+plus_zero_right Zero = Refl
+plus_zero_right (Succ n) = rewrite plus_zero_right n in Refl
+
+--3. add1+=+add1
+add1_plus_equal_plus_add1 : (left, right : Nat_Num) -> Succ (left + right) = left + (Succ right)
+add1_plus_equal_plus_add1 Zero _ = Refl
+add1_plus_equal_plus_add1 (Succ left) right = rewrite add1_plus_equal_plus_add1 left right in Refl
+
+-- ||| 4. comm+
+
+comm_plus : (left, right : Nat_Num) -> left + right = right + left
+comm_plus Zero right = rewrite plus_zero_right right in Refl
+comm_plus (Succ left) right =
+  rewrite comm_plus left right in
+    rewrite add1_plus_equal_plus_add1 right left in
       Refl
 
-||| 5. assoc+
-plusAssociative : (left, centre, right : Nat) ->
+-- ||| 5. assoc+
+associative_plus : (left, centre, right : Nat_Num) ->
   left + (centre + right) = (left + centre) + right
-plusAssociative Z _ _ = Refl
-plusAssociative (S left) centre right =
-  rewrite plusAssociative left centre right in Refl
+associative_plus Zero _ _ = Refl
+associative_plus (Succ left) centre right =
+  rewrite associative_plus left centre right in Refl
 
-||| 6. *
-mult : Nat -> Nat -> Nat
-mult Z right        = Z
-mult (S left) right = plus right $ mult left right
 
-||| 7. *0=0
-multZeroLeftZero : (right : Nat) -> Z * right = Z
-multZeroLeftZero _ = Refl
+-- 7. *0=0
+mult_zero_left : (right : Nat_Num) -> Zero * right = Zero
+mult_zero_left _ = Refl
 
-multZeroRightZero : (left : Nat) -> left * Z = Z
-multZeroRightZero Z        = Refl
-multZeroRightZero (S left) = multZeroRightZero left
+mult_zero_right : (left : Nat_Num) -> left * Zero = Zero
+mult_zero_right Zero        = Refl
+mult_zero_right (Succ left) = mult_zero_right left
 
-||| 8. *add1=+*
-multRightSuccPlus : (left, right : Nat) ->
-    left * (S right) = left + (left * right)
-multRightSuccPlus Z _ = Refl
-multRightSuccPlus (S left) right =
-  rewrite multRightSuccPlus left right in
-  rewrite plusAssociative left right (left * right) in
-  rewrite plusAssociative right left (left * right) in
-  rewrite plusCommutative right left in
+-- ||| 8. *add1=+*
+mult_add1_equal_add1_mult_right : (left, right : Nat_Num) ->
+    left * (Succ right) = left + (left * right)
+mult_add1_equal_add1_mult_right Zero _ = Refl
+mult_add1_equal_add1_mult_right (Succ left) right =
+  rewrite mult_add1_equal_add1_mult_right left right in
+  rewrite associative_plus left right (left * right) in
+  rewrite associative_plus right left (left * right) in
+  rewrite comm_plus right left in
     Refl
   
-multLeftSuccPlus : (left, right : Nat) ->
-  (S left) * right = right + (left * right)
-multLeftSuccPlus _ _ = Refl
+mult_add1_equal_add1_mult_left : (left, right : Nat_Num) ->
+  (Succ left) * right = right + (left * right)
+mult_add1_equal_add1_mult_left _ _ = Refl
 
-||| 9. comm*
-multCommutative : (left, right : Nat) -> left * right = right * left
-multCommutative Z right = rewrite multZeroRightZero right in Refl
-multCommutative (S left) right =
-  rewrite multCommutative left right in
-  rewrite multRightSuccPlus right left in
+-- 9. comm*
+comm_mult : (left, right : Nat_Num) -> left * right = right * left
+comm_mult Zero right = rewrite mult_zero_right right in Refl
+comm_mult (Succ left) right =
+  rewrite comm_mult left right in
+  rewrite mult_add1_equal_add1_mult_right right left in
     Refl
 
-||| 10. distr+*
-multDistributesOverPlusLeft : (left, centre, right : Nat) ->
-    (left + centre) * right = (left * right) + (centre * right)
-multDistributesOverPlusLeft Z _ _ = Refl
-multDistributesOverPlusLeft (S k) centre right =
-  rewrite multDistributesOverPlusLeft k centre right in
+-- ||| 10. distr+*
+distr_left : (left, centre, right : Nat_Num) ->
+  (left + centre) * right = (left * right) + (centre * right)
+distr_left Zero _ _ = Refl
+distr_left (Succ k) centre right =
+  rewrite distr_left k centre right in
+    rewrite associative_plus right (k * right) (centre * right) in
       Refl
 
-||| 11. distr*+
-multDistributesOverPlusRight : (left, centre, right : Nat) ->
-    left * (centre + right) = (left * centre) + (left * right)
-multDistributesOverPlusRight left centre right =
-  rewrite multCommutative left (centre + right) in
-    rewrite multCommutative left centre in
-      rewrite multCommutative left right in
-multDistributesOverPlusLeft centre right left
+-- 11. distr*+
+-- distr_right : (left, centre, right : Nat_Num) ->
+distr_right : (left, centre, right : Nat_Num) ->
+  left * (centre + right) = (left * centre) + (left * right)
+distr_right left centre right =
+  rewrite comm_mult left (centre + right) in
+    rewrite comm_mult left centre in
+      rewrite comm_mult left right in
+  distr_right centre right left
 
-||| 12. assoc*
-multAssociative : (left, centre, right : Nat) ->
+
+-- 12. assoc*
+assoc_mult : (left, centre, right : Nat_Num) ->
   left * (centre * right) = (left * centre) * right
-multAssociative Z _ _ = Refl
-multAssociative (S left) centre right =
-  let inductiveHypothesis = multAssociative left centre right in
+assoc_mult Zero _ _ = Refl
+assoc_mult (Succ left) centre right =
+  let inductiveHypothesis = assoc_mult left centre right in
     rewrite inductiveHypothesis in
-      rewrite multDistributesOverPlusLeft centre (mult left centre) right in
+      rewrite distr_left centre (left * centre) right in
         Refl

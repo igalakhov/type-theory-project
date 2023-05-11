@@ -43,9 +43,10 @@ x_eq_xx_x_zero_or_one x x_eq_xx =
   case x of
     Z => Left Refl
     S Z => Right Refl
-    S (S k) => ?todo_x_eq_xx
+    S (S k) => ?hehe
 
 x_squared_not_prime: (x: Nat) -> (Not (Prime (x*x)))
 x_squared_not_prime x xx_prime = case (snd xx_prime) x (x_divides_xx x) of 
     Left x_eq_1 => ((fst xx_prime) (x_eq_1_xx_eq_1 x x_eq_1))
     Right x_eq_xx => ?todo3
+

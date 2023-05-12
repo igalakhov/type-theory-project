@@ -22,13 +22,13 @@ sub: Nat -> Nat -> Nat
 sub Z x = x 
 sub (S y) x = prev (sub y x)
 
-nz_product: (x: Nat) -> (y: Nat) -> Not ((S x) * (S y) = 0)
-nz_product x y = ?heheha
-
-total integral_domain: (x: Nat) -> (y: Nat) -> (x*y=0) -> Either (x=0) (y=0)
+integral_domain: (x: Nat) -> (y: Nat) -> (x*y=0) -> Either (x=0) (y=0)
 integral_domain Z _ _ = Left Refl
 integral_domain _ Z _ = Right Refl 
-integral_domain (S xp) (S yp) xy_0 = void ((nz_product xp yp) xy_0)
+integral_domain (S xp) (S yp) xy_0 = void (SIsNotZ xy_0)
+
+cancellation: (x: Nat) -> (y: Nat) -> (z: Nat) -> (z*x = z*y) -> Either (z=0) (x=y)
+cancellation x y z zx_eq_zy = ?todo
 
 no_prime_is_zero: (p: Nat) -> (Prime p) -> Not (p=0)
 no_prime_is_zero p (p_not_1, p_is_prime) p_is_zero = case p_is_prime 2 (rewrite p_is_zero in two_divides_zero) of 

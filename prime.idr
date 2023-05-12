@@ -22,6 +22,13 @@ sub: Nat -> Nat -> Nat
 sub Z x = x 
 sub (S y) x = prev (sub y x)
 
+nz_product: (x: Nat) -> (y: Nat) -> Not ((S x) * (S y) = 0)
+nz_product x y = ?heheha
+
+total integral_domain: (x: Nat) -> (y: Nat) -> (x*y=0) -> Either (x=0) (y=0)
+integral_domain Z _ _ = Left Refl
+integral_domain _ Z _ = Right Refl 
+integral_domain (S xp) (S yp) xy_0 = void ((nz_product xp yp) xy_0)
 
 no_prime_is_zero: (p: Nat) -> (Prime p) -> Not (p=0)
 no_prime_is_zero p (p_not_1, p_is_prime) p_is_zero = case p_is_prime 2 (rewrite p_is_zero in two_divides_zero) of 
@@ -50,7 +57,7 @@ x_eq_xx_x_zero_or_one : (x : Nat) -> x = x * x -> Either (x = 0) (x = 1)
 x_eq_xx_x_zero_or_one x x_eq_xx =
   case x of
     Z => Left Refl
-    _ => Right (sym (congdivx x x_eq_xx))
+    _ => Right ?heheha
 
 x_squared_not_prime: (x: Nat) -> (Not (Prime (x*x)))
 x_squared_not_prime x xx_prime = case (snd xx_prime) x (x_divides_xx x) of 

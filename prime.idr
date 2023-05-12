@@ -91,15 +91,13 @@ x_eq_1_xx_eq_1 x x_eq_1 = rewrite x_eq_1 in Refl
 congdivx: (b: Nat) -> (x=y) -> ((div x b) = (div y b))
 congdivx b Refl = Refl
 
-x_eq_xx_x_zero_or_one : (x : Nat) -> x = x * x -> Either (x = 0) (x = 1)
-x_eq_xx_x_zero_or_one x x_eq_xx = case x of 
-    Z => Left Refl
-    (S Z) => Right Refl
-    (S y) => ?todo
 
 x_eq_xx_x_zero_or_one : (x : Nat) -> x = x * x -> Either (x = 0) (x = 1)
 x_eq_xx_x_zero_or_one x x_eq_xx = ?idk
 
+
+n_div_a_div_ab: (a: Nat, b: Nat) -> Divides n a -> Divides n (a*b)
+n_div_a_div_ab a n_div_a = ?todo_n_div_a_div_ab
 
 n_divides_a_minus_b: (a: Nat, b: Nat) -> Divides n (minus a b) -> ((Divides n a), (Divides n b))
 n_divides_a_minus_b a b n_div_a_min_b = ?n_divides_a_todo

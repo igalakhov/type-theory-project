@@ -27,8 +27,45 @@ integral_domain Z _ _ = Left Refl
 integral_domain _ Z _ = Right Refl 
 integral_domain (S xp) (S yp) xy_0 = void (SIsNotZ xy_0)
 
-cancellation: (x: Nat) -> (y: Nat) -> (z: Nat) -> (z*x = z*y) -> Either (z=0) (x=y)
-cancellation x y z zx_eq_zy = ?todo
+eq_zero: (x: Nat) -> (y: Nat) -> (x=y) -> ((minus x y) = 0)
+eq_zero Z Z x_eq_y = Refl
+eq_zero (S xp) Z x_eq_y = void (SIsNotZ x_eq_y)
+eq_zero Z (S yp) x_eq_y = void (SIsNotZ (sym x_eq_y))
+eq_zero (S xp) (S yp) x_eq_y = eq_zero xp yp (prev_ok x_eq_y)
+
+-- y < x
+not_eq_zero: (x: Nat, y: Nat) -> (LT y x) -> Not ((minus x y) = 0)
+not_eq_zero Z Z y_less_x = void (succNotLTEzero y_less_x)
+not_eq_zero (S xp) Z y_less_x = \minus_eq_zero => void (SIsNotZ minus_eq_zero)
+not_eq_zero Z (S yp) y_less_x = void (succNotLTEzero y_less_x)
+not_eq_zero (S xp) (S yp) (y_less_x) = not_eq_zero xp yp (fromLteSucc y_less_x)
+
+-- zx = zy -> either z = 0 or x=y
+cancellation_helper: (x: Nat) -> (y: Nat) -> (z: Nat) -> (LT y x) -> (z*x = z*y) -> Either (z=0) (x=y)
+cancellation_helper x y z y_less_x zx_eq_zy = let 
+    zx_minus_zy_is_zero = (eq_zero (z*x) (z*y) zx_eq_zy) 
+    z_times_x_minus_y_is_zero = trans (multDistributesOverMinusRight z x y) zx_minus_zy_is_zero
+    in 
+    case integral_domain z (minus x y) z_times_x_minus_y_is_zero of 
+        Left z_is_zero => Left z_is_zero
+        Right minus_xy_is_zero => void $ (not_eq_zero x y y_less_x) minus_xy_is_zero
+
+my_cmp: (x: Nat, y: Nat) -> Either (x=y) (Either (LT x y) (LT y x))
+my_cmp Z Z = Left Refl
+my_cmp (S x) Z = Right (Right (LTESucc LTEZero))
+my_cmp Z (S y) = Right (Left (LTESucc LTEZero))
+my_cmp (S xp) (S yp) = case my_cmp xp yp of 
+    Left xp_eq_yp => Left (cong xp_eq_yp)
+    Right (Left xp_lt_yp) => Right (Left (LTESucc xp_lt_yp))
+    Right (Right yp_lt_xp) => Right (Right (LTESucc yp_lt_xp))
+
+cancellation: (x: Nat, y: Nat, z: Nat) -> (z*x = z*y) -> Either (z=0) (x=y)
+cancellation x y z zx_eq_zy = case my_cmp x y of 
+    Left x_eq_y => Right x_eq_y
+    Right (Left (x_lt_y)) => case cancellation_helper y x z x_lt_y (sym zx_eq_zy) of 
+        Left z_0 => Left z_0 
+        Right y_eq_x => Right (sym y_eq_x)
+    Right (Right (y_lt_x)) => cancellation_helper x y z y_lt_x zx_eq_zy
 
 no_prime_is_zero: (p: Nat) -> (Prime p) -> Not (p=0)
 no_prime_is_zero p (p_not_1, p_is_prime) p_is_zero = case p_is_prime 2 (rewrite p_is_zero in two_divides_zero) of 
@@ -54,10 +91,7 @@ congdivx: (b: Nat) -> (x=y) -> ((div x b) = (div y b))
 congdivx b Refl = Refl
 
 x_eq_xx_x_zero_or_one : (x : Nat) -> x = x * x -> Either (x = 0) (x = 1)
-x_eq_xx_x_zero_or_one x x_eq_xx =
-  case x of
-    Z => Left Refl
-    _ => Right ?heheha
+x_eq_xx_x_zero_or_one x x_eq_xx = ?idk
 
 x_squared_not_prime: (x: Nat) -> (Not (Prime (x*x)))
 x_squared_not_prime x xx_prime = case (snd xx_prime) x (x_divides_xx x) of 

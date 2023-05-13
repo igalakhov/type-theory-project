@@ -67,6 +67,7 @@ cancellation x y z zx_eq_zy = case my_cmp x y of
         Right y_eq_x => Right (sym y_eq_x)
     Right (Right (y_lt_x)) => cancellation_helper x y z y_lt_x zx_eq_zy
 
+
 no_prime_is_zero: (p: Nat) -> (Prime p) -> Not (p=0)
 no_prime_is_zero p (p_not_1, p_is_prime) p_is_zero = case p_is_prime 2 (rewrite p_is_zero in two_divides_zero) of 
         Left two_is_one => let 
@@ -90,6 +91,7 @@ x_eq_1_xx_eq_1 x x_eq_1 = rewrite x_eq_1 in Refl
 congdivx: (b: Nat) -> (x=y) -> ((div x b) = (div y b))
 congdivx b Refl = Refl
 
+
 x_eq_xx_x_zero_or_one : (x : Nat) -> x = x * x -> Either (x = 0) (x = 1)
 x_eq_xx_x_zero_or_one x x_eq_xx = sym <$> cancellation 1 x x (trans (multOneRightNeutral x) x_eq_xx)
 
@@ -108,3 +110,15 @@ x_squared_not_prime x xx_prime = case (snd xx_prime) x (x_divides_xx x) of
     Right x_eq_xx => case x_eq_xx_x_zero_or_one x x_eq_xx of 
         Left x_eq_0 => (no_prime_is_zero (x*x) xx_prime) (x_zero_xx_zero x x_eq_0)
         Right x_eq_1 => (fst xx_prime) (x_one_xx_one x x_eq_1)
+
+n_div_a_div_ab: (a: Nat, b: Nat) -> Divides n a -> Divides n (a*b)
+n_div_a_div_ab a n_div_a = ?todo_n_div_a_div_ab
+
+n_divides_a_minus_b: (a: Nat, b: Nat) -> Divides n (minus a b) -> ((Divides n a), (Divides n b))
+n_divides_a_minus_b a b n_div_a_min_b = ?n_divides_a_todo
+
+factor_divides_ab: (a: Nat, b: Nat) -> Divides n (a*b) -> Either (Divides n a) (Divides n b)
+factor_divides_ab a b n_div_ab = ?factor_divides_todo
+
+pow_a_divides_pow_b: (a: Nat, b: Nat) -> Divides (power a n) (power b n) -> Divides a b
+pow_a_divides_pow_b a b an_div_bn = ?pow_todo

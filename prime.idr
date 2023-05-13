@@ -91,10 +91,20 @@ congdivx: (b: Nat) -> (x=y) -> ((div x b) = (div y b))
 congdivx b Refl = Refl
 
 x_eq_xx_x_zero_or_one : (x : Nat) -> x = x * x -> Either (x = 0) (x = 1)
-x_eq_xx_x_zero_or_one x x_eq_xx = ?idk
+x_eq_xx_x_zero_or_one x x_eq_xx = sym <$> cancellation 1 x x (trans (multOneRightNeutral x) x_eq_xx)
+
+x_zero_xx_zero: (x: Nat) -> x=0 -> (x*x) = 0
+x_zero_xx_zero Z x_eq_0 = Refl
+x_zero_xx_zero (S x) x_eq_0 = void (SIsNotZ x_eq_0)
+
+x_one_xx_one: (x: Nat) -> x=1 -> (x*x) = 1
+x_one_xx_one Z x_eq_1 = void (SIsNotZ (sym x_eq_1))
+x_one_xx_one (S Z) x_eq_1 = Refl
+x_one_xx_one (S (S x)) x_eq_1 = void (SIsNotZ (prev_ok x_eq_1))
 
 x_squared_not_prime: (x: Nat) -> (Not (Prime (x*x)))
 x_squared_not_prime x xx_prime = case (snd xx_prime) x (x_divides_xx x) of 
     Left x_eq_1 => ((fst xx_prime) (x_eq_1_xx_eq_1 x x_eq_1))
-    Right x_eq_xx => ?todo3
-
+    Right x_eq_xx => case x_eq_xx_x_zero_or_one x x_eq_xx of 
+        Left x_eq_0 => (no_prime_is_zero (x*x) xx_prime) (x_zero_xx_zero x x_eq_0)
+        Right x_eq_1 => (fst xx_prime) (x_one_xx_one x x_eq_1)

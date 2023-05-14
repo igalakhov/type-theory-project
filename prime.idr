@@ -146,5 +146,23 @@ divide_product a b c d (ap ** apa_b) (cp ** cpc_d) = let
     in 
     ((mult ap cp) ** step8)
 
+a_div_b_pow: (a: Nat, b: Nat, n: Nat) -> Divides a b -> Divides (power a n) (power b n)
+a_div_b_pow a b Z (m ** am_b) = (1 ** Refl)
+a_div_b_pow a b (S x) (m ** am_b) = let 
+    (m1 ** m1_mul) = a_div_b_pow a b x (m ** am_b)
+    equiv = fequiv (mult a m) b (mult (power a x) m1) (power b x) mult am_b m1_mul
+    step0 = multAssociative (mult a m) (power a x) m1
+    step1 = cong {f=\y => (mult (mult y (power a x)) m1)} (multCommutative a m)
+    step2 = trans step0 step1
+    step3 = cong {f=\y => (mult y m1)} (sym (multAssociative m a (power a x)))
+    step4 = trans step2 step3
+    step5 = cong {f=\y => (mult y m1)} (multCommutative m (mult a (power a x)))
+    step6 = trans step4 step5
+    step7 = sym (multAssociative (mult a (power a x)) m m1)
+    step8 = trans step6 step7
+    step9 = trans (sym step8) equiv
+    in 
+    ((mult m m1) ** step9)
+
 pow_a_divides_pow_b: (a: Nat, b: Nat) -> Divides (power a n) (power b n) -> Divides a b
 pow_a_divides_pow_b a b an_div_bn = ?pow_todo

@@ -4,6 +4,9 @@ Divides a b = (m ** (a*m = b))
 Prime: Nat -> Type
 Prime p = (Not (p=1), (x: Nat) -> Divides x p -> Either (x = 1) (x = p))
 
+CoPrime: Nat -> Nat -> Type
+CoPrime a b = (x: Nat) -> (Divides x a) -> (Divides x b) -> (x=1) 
+
 two_divides_zero: Divides 2 0
 two_divides_zero = (0 ** Refl)
 
@@ -164,5 +167,36 @@ a_div_b_pow a b (S x) (m ** am_b) = let
     in 
     ((mult m m1) ** step9)
 
-pow_a_divides_pow_b: (a: Nat, b: Nat) -> Divides (power a n) (power b n) -> Divides a b
-pow_a_divides_pow_b a b an_div_bn = ?pow_todo
+lt_implies_lte: (a: Nat, b: Nat) -> LT a b -> LTE a b
+lt_implies_lte = ?todo_lt
+
+nonzero_product: (a: Nat, b: Nat) -> (a*b = S(_)) -> (a = (S _), b = (S _))
+
+mult_lte: (a: Nat, b: Nat) -> (a*S(_) = b) -> LTE a b
+
+lt_cont: (a: Nat, b: Nat) -> LTE a b -> LT b a -> Void
+
+divisibility_decidable: (a: Nat, b: Nat) -> Either (a `Divides` b) (Not (a `Divides` b))
+divisibility_decidable a Z = rewrite (sym (multZeroRightZero a)) in Left (0 ** Refl)
+divisibility_decidable a (S bp) = case my_cmp a (S bp) of 
+    Left a_eq_b => Left (1 ** trans (multOneRightNeutral a) a_eq_b)
+    Right (Left (a_le_b)) => let 
+        a_leq_b = lt_implies_lte a (S bp) a_le_b -- needs to be in scope for the latter to work
+        in 
+        case (divisibility_decidable a ((S bp)-a)) of 
+            Left x => ?aa 
+            Right y => ?bb
+    Right (Right (b_le_a)) => Right $
+        \pat => case pat of 
+            (Z ** am_b) => ?todo1 
+            ((S mp) ** am_b) =>
+                let 
+                    m_nz = snd (nonzero_product a (S mp) am_b)
+                    tst = trans (cong {f=\x => mult a x} (sym m_nz)) am_b
+                    mm = mult_lte a (S bp) tst
+                    cc = lt_cont a (S bp) mm b_le_a
+                in
+                    cc
+        -- \(m ** (am_b)) => case m of 
+        --     Z => ?todo1
+

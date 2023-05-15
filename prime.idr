@@ -225,6 +225,29 @@ div_less_eq a x (m ** ax_m_add_1) = ?todo_div
 greater_not_div: (a: Nat, b: Nat) -> (S a) `LT` b -> Not $ (S a) `Divides` b
 greater_not_div a b sa_lt_b = ?tododo
 
+minus_cancel: (x: Nat, y: Nat) -> LTE y x -> ((x-y)+y = x)
+minus_cancel Z Z _ = Refl
+minus_cancel Z (S yp) y_leq_x = void (succNotLTEzero y_leq_x)
+minus_cancel x Z y_leq_x = let 
+    step0 = plusZeroRightNeutral (minus x 0)
+    step1 = minusZeroRight x
+    in 
+    trans step0 step1
+minus_cancel (S xp) (S yp) y_leq_x = let
+    rec_eq = minus_cancel xp yp (fromLteSucc y_leq_x)
+    step0 = cong {f=S} rec_eq
+    step1 = sym $ plusSuccRightSucc (minus xp yp) yp
+    in 
+    trans step1 step0
+
+plus_rotate: (x: Nat, y: Nat, z: Nat) -> (x+y)+z = (x+z)+y
+plus_rotate x y z = let 
+    step0 = cong {f=\zz=>(x+zz)} (plusCommutative y z)
+    step1 = sym (plusAssociative x y z)
+    step2 = plusAssociative x z y
+    in 
+    trans (trans step1 step0) step2
+
 my_div: (x: Nat, y: Nat) -> (rm ** ((fst rm)*y + (snd rm) = x, LT (snd rm) y))
 my_div Z (S yp) = ((0, 0) ** (Refl, LTESucc $ LTEZero))
 my_div (S xp) (S yp) = case my_cmp (S xp) (S yp) of 
@@ -236,5 +259,12 @@ my_div (S xp) (S yp) = case my_cmp (S xp) (S yp) of
     Right (Right y_lt_x) => let 
         y_lte_x = lteSuccLeft y_lt_x
         ((q, r) ** (p1, r_le_y)) = my_div ((S xp) - (S yp)) (S yp)
+        step0 = minus_cancel (S xp) (S yp) y_lte_x
+        step1 = cong {f=\zz => plus zz (mult 1 (S yp))} p1
+        step2 = plus_rotate (mult q (S yp)) r (mult 1 (S yp))
+        step3 = cong {f=\zz => plus zz r} (multDistributesOverPlusLeft q 1 (S yp))
+        step4 = (sym (trans (trans (sym step1) step2) (sym step3)))
+        step5 = cong {f=\zz => (plus (minus xp yp) (S zz))} (plusZeroRightNeutral yp)
+        step6 = trans (trans step4 step5) step0
         in 
-        ((q+1, r) ** (?what, r_le_y))
+        ((q+1, r) ** (step6, r_le_y))

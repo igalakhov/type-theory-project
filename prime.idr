@@ -146,7 +146,7 @@ divide_product a b c d (ap ** apa_b) (cp ** cpc_d) = let
     in 
     ((mult ap cp) ** step8)
 
-a_div_b_pow: (a: Nat, b: Nat, n: Nat) -> Divides a b -> Divides (power a n) (power b n)
+a_div_b_pow: (a: Nat, b: Nat, n: Nat) -> a `Divides` b -> (power a n) `Divides` (power b n)
 a_div_b_pow a b Z (m ** am_b) = (1 ** Refl)
 a_div_b_pow a b (S x) (m ** am_b) = let 
     (m1 ** m1_mul) = a_div_b_pow a b x (m ** am_b)
@@ -166,3 +166,26 @@ a_div_b_pow a b (S x) (m ** am_b) = let
 
 pow_a_divides_pow_b: (a: Nat, b: Nat) -> Divides (power a n) (power b n) -> Divides a b
 pow_a_divides_pow_b a b an_div_bn = ?pow_todo
+
+
+lte_mult_right: (a: Nat, b: Nat) -> Not (b=0) -> a `LTE` (mult a b)
+lte_mult_right Z b b_not_0 = lteRefl
+lte_mult_right (S k) b b_not_0 = let 
+    step0 = lte_mult_right k b b_not_0
+    k_less_kplusb = lteAddRight k
+    
+    in 
+    ?todo_lte
+
+
+div_less_eq: (a: Nat, b: Nat) -> a `Divides` (S b) -> a `LTE` (S b)
+div_less_eq a Z ((S Z) ** am_1) = let 
+    a1_eqa = sym $ multOneRightNeutral a
+    a_eq_1 = trans a1_eqa am_1
+    in
+    rewrite a_eq_1 in lteRefl
+div_less_eq a x (m ** ax_m_add_1) = ?todo_div
+
+
+greater_not_div: (a: Nat, b: Nat) -> (S a) `LT` b -> Not $ (S a) `Divides` b
+greater_not_div a b sa_lt_b = ?tododo

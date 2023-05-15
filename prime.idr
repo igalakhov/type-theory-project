@@ -173,7 +173,7 @@ lte_mult_right Z b b_not_0 = lteRefl
 lte_mult_right (S k) b b_not_0 = let 
     step0 = lte_mult_right k b b_not_0
     k_less_kplusb = lteAddRight k
-    
+
     in 
     ?todo_lte
 
@@ -186,6 +186,13 @@ div_less_eq a Z ((S Z) ** am_1) = let
     rewrite a_eq_1 in lteRefl
 div_less_eq a x (m ** ax_m_add_1) = ?todo_div
 
-
 greater_not_div: (a: Nat, b: Nat) -> (S a) `LT` b -> Not $ (S a) `Divides` b
 greater_not_div a b sa_lt_b = ?tododo
+
+my_div: (x: Nat, y: Nat) -> (rm ** ((fst rm)*y + (snd rm) = x, LT (snd rm) y))
+my_div x y = let 
+    q = divNat x y
+    r = modNat x y
+    rm = (q,r)
+    in 
+    ?todo_divv

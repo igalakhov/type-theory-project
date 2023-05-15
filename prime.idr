@@ -149,7 +149,7 @@ divide_product a b c d (ap ** apa_b) (cp ** cpc_d) = let
     in 
     ((mult ap cp) ** step8)
 
-a_div_b_pow: (a: Nat, b: Nat, n: Nat) -> Divides a b -> Divides (power a n) (power b n)
+a_div_b_pow: (a: Nat, b: Nat, n: Nat) -> a `Divides` b -> (power a n) `Divides` (power b n)
 a_div_b_pow a b Z (m ** am_b) = (1 ** Refl)
 a_div_b_pow a b (S x) (m ** am_b) = let 
     (m1 ** m1_mul) = a_div_b_pow a b x (m ** am_b)
@@ -176,27 +176,65 @@ mult_lte: (a: Nat, b: Nat) -> (a*S(_) = b) -> LTE a b
 
 lt_cont: (a: Nat, b: Nat) -> LTE a b -> LT b a -> Void
 
-divisibility_decidable: (a: Nat, b: Nat) -> Either (a `Divides` b) (Not (a `Divides` b))
-divisibility_decidable a Z = rewrite (sym (multZeroRightZero a)) in Left (0 ** Refl)
-divisibility_decidable a (S bp) = case my_cmp a (S bp) of 
-    Left a_eq_b => Left (1 ** trans (multOneRightNeutral a) a_eq_b)
-    Right (Left (a_le_b)) => let 
-        a_leq_b = lt_implies_lte a (S bp) a_le_b -- needs to be in scope for the latter to work
-        in 
-        case (divisibility_decidable a ((S bp)-a)) of 
-            Left x => ?aa 
-            Right y => ?bb
-    Right (Right (b_le_a)) => Right $
-        \pat => case pat of 
-            (Z ** am_b) => ?todo1 
-            ((S mp) ** am_b) =>
-                let 
-                    m_nz = snd (nonzero_product a (S mp) am_b)
-                    tst = trans (cong {f=\x => mult a x} (sym m_nz)) am_b
-                    mm = mult_lte a (S bp) tst
-                    cc = lt_cont a (S bp) mm b_le_a
-                in
-                    cc
+-- divisibility_decidable: (a: Nat, b: Nat) -> Either (a `Divides` b) (Not (a `Divides` b))
+-- divisibility_decidable a Z = rewrite (sym (multZeroRightZero a)) in Left (0 ** Refl)
+-- divisibility_decidable a (S bp) = case my_cmp a (S bp) of 
+--     Left a_eq_b => Left (1 ** trans (multOneRightNeutral a) a_eq_b)
+--     Right (Left (a_le_b)) => let 
+--         a_leq_b = lt_implies_lte a (S bp) a_le_b -- needs to be in scope for the latter to work
+--         in 
+--         case (divisibility_decidable a ((S bp)-a)) of 
+--             Left x => ?aa 
+--             Right y => ?bb
+--     Right (Right (b_le_a)) => Right $
+--         \pat => case pat of 
+--             (Z ** am_b) => ?todo1 
+--             ((S mp) ** am_b) =>
+--                 let 
+--                     m_nz = snd (nonzero_product a (S mp) am_b)
+--                     tst = trans (cong {f=\x => mult a x} (sym m_nz)) am_b
+--                     mm = mult_lte a (S bp) tst
+--                     cc = lt_cont a (S bp) mm b_le_a
+--                 in
+--                     cc
         -- \(m ** (am_b)) => case m of 
         --     Z => ?todo1
 
+pow_a_divides_pow_b: (a: Nat, b: Nat) -> Divides (power a n) (power b n) -> Divides a b
+pow_a_divides_pow_b a b an_div_bn = ?pow_todo
+
+
+lte_mult_right: (a: Nat, b: Nat) -> Not (b=0) -> a `LTE` (mult a b)
+lte_mult_right Z b b_not_0 = lteRefl
+lte_mult_right (S k) b b_not_0 = let 
+    step0 = lte_mult_right k b b_not_0
+    k_less_kplusb = lteAddRight k
+
+    in 
+    ?todo_lte
+
+
+div_less_eq: (a: Nat, b: Nat) -> a `Divides` (S b) -> a `LTE` (S b)
+div_less_eq a Z ((S Z) ** am_1) = let 
+    a1_eqa = sym $ multOneRightNeutral a
+    a_eq_1 = trans a1_eqa am_1
+    in
+    rewrite a_eq_1 in lteRefl
+div_less_eq a x (m ** ax_m_add_1) = ?todo_div
+
+greater_not_div: (a: Nat, b: Nat) -> (S a) `LT` b -> Not $ (S a) `Divides` b
+greater_not_div a b sa_lt_b = ?tododo
+
+my_div: (x: Nat, y: Nat) -> (rm ** ((fst rm)*y + (snd rm) = x, LT (snd rm) y))
+my_div Z (S yp) = ((0, 0) ** (Refl, LTESucc $ LTEZero))
+my_div (S xp) (S yp) = case my_cmp (S xp) (S yp) of 
+    Left x_eq_y => let 
+        eq = cong {f=S} (trans (cong {f = (`plus` 0)} (plusZeroRightNeutral yp)) (plusZeroRightNeutral yp))
+        in 
+        ((1, 0) ** (trans eq (sym x_eq_y), LTESucc $ LTEZero)) 
+    Right (Left x_lt_y) => ((0, (S xp)) ** (Refl, x_lt_y))
+    Right (Right y_lt_x) => let 
+        y_lte_x = lteSuccLeft y_lt_x
+        ((q, r) ** (p1, r_le_y)) = my_div ((S xp) - (S yp)) (S yp)
+        in 
+        ((q+1, r) ** (?what, r_le_y))

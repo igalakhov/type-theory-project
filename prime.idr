@@ -176,30 +176,6 @@ mult_lte: (a: Nat, b: Nat) -> (a*S(_) = b) -> LTE a b
 
 lt_cont: (a: Nat, b: Nat) -> LTE a b -> LT b a -> Void
 
--- divisibility_decidable: (a: Nat, b: Nat) -> Either (a `Divides` b) (Not (a `Divides` b))
--- divisibility_decidable a Z = rewrite (sym (multZeroRightZero a)) in Left (0 ** Refl)
--- divisibility_decidable a (S bp) = case my_cmp a (S bp) of 
---     Left a_eq_b => Left (1 ** trans (multOneRightNeutral a) a_eq_b)
---     Right (Left (a_le_b)) => let 
---         a_leq_b = lt_implies_lte a (S bp) a_le_b -- needs to be in scope for the latter to work
---         in 
---         case (divisibility_decidable a ((S bp)-a)) of 
---             Left x => ?aa 
---             Right y => ?bb
---     Right (Right (b_le_a)) => Right $
---         \pat => case pat of 
---             (Z ** am_b) => ?todo1 
---             ((S mp) ** am_b) =>
---                 let 
---                     m_nz = snd (nonzero_product a (S mp) am_b)
---                     tst = trans (cong {f=\x => mult a x} (sym m_nz)) am_b
---                     mm = mult_lte a (S bp) tst
---                     cc = lt_cont a (S bp) mm b_le_a
---                 in
---                     cc
-        -- \(m ** (am_b)) => case m of 
-        --     Z => ?todo1
-
 pow_a_divides_pow_b: (a: Nat, b: Nat) -> Divides (power a n) (power b n) -> Divides a b
 pow_a_divides_pow_b a b an_div_bn = ?pow_todo
 
@@ -268,3 +244,54 @@ my_div (S xp) (S yp) = case my_cmp (S xp) (S yp) of
         step6 = trans (trans step4 step5) step0
         in 
         ((q+1, r) ** (step6, r_le_y))
+
+nzmul_geq: (n: Nat, m: Nat) -> Either ((n*m)=0) (LTE n (n*m))
+
+lt_contradiction: (n: Nat, m: Nat) -> LT n m -> LTE m n -> Void
+
+decide_zero: (n: Nat) -> Either (n=0) ((n=0) -> Void)
+
+lte_equal: (n: Nat, m: Nat) -> (n=m) -> LTE n m
+
+divisibility_decidable: (a: Nat, b: Nat) -> Either (a `Divides` b) (Not (a `Divides` b))
+divisibility_decidable a b = let 
+    ((q, r) ** (p1, p2)) = my_div b a 
+    in 
+    case (decide_zero r) of 
+        Left (r_zero) => let 
+            -- thing = rewrite (sym r_zero) in p1 
+            step0 = cong {f=\zz => plus (mult q a) zz} r_zero
+            step1 = plusZeroRightNeutral (mult q a)
+            step2 = sym (trans step0 step1)
+            step3 = trans step2 p1
+            step4 = trans (multCommutative a q) step3
+            in 
+            Left (q ** step4)
+        Right (r_nonzero) => Right $ \pf => let 
+            (m ** am_b) = pf 
+            step0 = trans p1 (sym am_b)
+            step1 = cong {f=\zz => minus zz ((mult q a) + 0)} step0
+            step2 = plusMinusLeftCancel (mult q a) r 0
+            step3 = trans (sym step1) step2
+            step4 = trans step3 (minusZeroRight r)
+            step5 = cong {f=\zz=> (minus (mult a m) zz)} (plusZeroRightNeutral (mult q a))
+            step6 = trans (sym step5) step4
+            step7 = cong {f=\zz=> minus (mult a m) zz} (multCommutative q a)
+            step8 = trans (sym step7) step6
+            step9 = multDistributesOverMinusRight a m q
+            step10 = trans step9 step8 -- a*(m-q) = r1
+            in 
+                case nzmul_geq a (minus m q) of 
+                    Left prod_zr => let 
+                        r_is_zero = trans (sym step10) prod_zr 
+                        in 
+                        r_nonzero r_is_zero
+                    Right a_leq_prod => let 
+                        prod_leq_r = lte_equal (mult a (minus m q)) r step10
+                        a_leq_r = lteTransitive a_leq_prod prod_leq_r
+                        in 
+                        lt_contradiction r a p2 a_leq_r
+
+-- r1 = am - qa
+-- aq - am = r1 
+-- a(q-m) = r1

@@ -247,11 +247,17 @@ my_div (S xp) (S yp) = case my_cmp (S xp) (S yp) of
 
 nzmul_geq: (n: Nat, m: Nat) -> Either ((n*m)=0) (LTE n (n*m))
 
+lte_equal: (n: Nat, m: Nat) -> (n=m) -> LTE n m
+
 lt_contradiction: (n: Nat, m: Nat) -> LT n m -> LTE m n -> Void
+lt_contradiction Z Z lt lte = succNotLTEzero lt
+lt_contradiction (S np) Z lt lte = succNotLTEzero lt
+lt_contradiction Z (S mp) lt lte = succNotLTEzero lte 
+lt_contradiction (S np) (S mp) lt lte = lt_contradiction np mp (fromLteSucc lt) (fromLteSucc lte)
 
 decide_zero: (n: Nat) -> Either (n=0) ((n=0) -> Void)
-
-lte_equal: (n: Nat, m: Nat) -> (n=m) -> LTE n m
+decide_zero Z = Left Refl 
+decide_zero (S x) = Right SIsNotZ
 
 divisibility_decidable: (a: Nat, b: Nat) -> Either (a `Divides` b) (Not (a `Divides` b))
 divisibility_decidable a b = let 

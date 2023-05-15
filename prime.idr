@@ -245,9 +245,46 @@ my_div (S xp) (S yp) = case my_cmp (S xp) (S yp) of
         in 
         ((q+1, r) ** (step6, r_le_y))
 
+lte_lemma: (n: Nat, m: Nat, k: Nat) -> (m=k) -> LTE n m -> LTE n k
+lte_lemma _ Z Z eq lt = lt
+lte_lemma (S np) (S mp) Z eq lt = void $ SIsNotZ eq 
+lte_lemma (S np) Z (S kp) eq lt = void $ SIsNotZ (sym eq)
+lte_lemma (S np) (S mp) (S kp) eq lt = let 
+    rec_case = lte_lemma np mp kp (cong {f=prev} eq) (fromLteSucc lt)
+    in 
+    LTESucc rec_case
+
+
+lte_add_k: (n: Nat, m: Nat, k: Nat) -> LTE n m -> LTE n (m+k)
+lte_add_k n m Z lt = lte_lemma n m (plus m 0) (sym (plusZeroRightNeutral m)) lt
+lte_add_k n m (S kp) lt = let 
+    rec_case = lteSuccRight $ lte_add_k n m kp lt 
+    eq = plusSuccRightSucc m kp
+    in 
+    lte_lemma n (S (plus m kp)) (plus m (S kp)) eq rec_case 
+
+lte_mul_succ: (n: Nat, m: Nat) -> LTE n (n*m) -> LTE n (n*(S m))
+lte_mul_succ n m lt = let 
+    add_k_eq = lte_add_k n (n*m) n lt
+    step0 = multRightSuccPlus n m
+    step1 = plusCommutative n (mult n m)
+    step2 = sym $ trans step0 step1
+    in 
+    lte_lemma n (plus (mult n m) n) (mult n (S m)) step2 add_k_eq
+
+lte_mul: (n: Nat, m: Nat) -> LTE n (n*(S m))
+lte_mul n Z = lte_lemma n n (mult n 1) (sym (multOneRightNeutral n)) lteRefl
+lte_mul n (S mp) = lte_mul_succ n (S mp) (lte_mul n mp)
+
 nzmul_geq: (n: Nat, m: Nat) -> Either ((n*m)=0) (LTE n (n*m))
+nzmul_geq n Z = Left (multZeroRightZero n)
+nzmul_geq n (S mp) = Right (lte_mul n mp)
 
 lte_equal: (n: Nat, m: Nat) -> (n=m) -> LTE n m
+lte_equal Z Z eq = LTEZero
+lte_equal (S np) Z eq = void (SIsNotZ eq)
+lte_equal Z (S mp) eq = void (SIsNotZ (sym eq))
+lte_equal (S np) (S mp) eq = LTESucc (lte_equal np mp (cong {f=prev} eq))
 
 lt_contradiction: (n: Nat, m: Nat) -> LT n m -> LTE m n -> Void
 lt_contradiction Z Z lt lte = succNotLTEzero lt
@@ -265,7 +302,6 @@ divisibility_decidable a b = let
     in 
     case (decide_zero r) of 
         Left (r_zero) => let 
-            -- thing = rewrite (sym r_zero) in p1 
             step0 = cong {f=\zz => plus (mult q a) zz} r_zero
             step1 = plusZeroRightNeutral (mult q a)
             step2 = sym (trans step0 step1)

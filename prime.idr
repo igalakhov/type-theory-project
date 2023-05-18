@@ -167,40 +167,6 @@ a_div_b_pow a b (S x) (m ** am_b) = let
     in 
     ((mult m m1) ** step9)
 
-lt_implies_lte: (a: Nat, b: Nat) -> LT a b -> LTE a b
-lt_implies_lte = ?todo_lt
-
-nonzero_product: (a: Nat, b: Nat) -> (a*b = S(_)) -> (a = (S _), b = (S _))
-
-mult_lte: (a: Nat, b: Nat) -> (a*S(_) = b) -> LTE a b
-
-lt_cont: (a: Nat, b: Nat) -> LTE a b -> LT b a -> Void
-
-pow_a_divides_pow_b: (a: Nat, b: Nat) -> Divides (power a n) (power b n) -> Divides a b
-pow_a_divides_pow_b a b an_div_bn = ?pow_todo
-
-
-lte_mult_right: (a: Nat, b: Nat) -> Not (b=0) -> a `LTE` (mult a b)
-lte_mult_right Z b b_not_0 = lteRefl
-lte_mult_right (S k) b b_not_0 = let 
-    step0 = lte_mult_right k b b_not_0
-    k_less_kplusb = lteAddRight k
-
-    in 
-    ?todo_lte
-
-
-div_less_eq: (a: Nat, b: Nat) -> a `Divides` (S b) -> a `LTE` (S b)
-div_less_eq a Z ((S Z) ** am_1) = let 
-    a1_eqa = sym $ multOneRightNeutral a
-    a_eq_1 = trans a1_eqa am_1
-    in
-    rewrite a_eq_1 in lteRefl
-div_less_eq a x (m ** ax_m_add_1) = ?todo_div
-
-greater_not_div: (a: Nat, b: Nat) -> (S a) `LT` b -> Not $ (S a) `Divides` b
-greater_not_div a b sa_lt_b = ?tododo
-
 minus_cancel: (x: Nat, y: Nat) -> LTE y x -> ((x-y)+y = x)
 minus_cancel Z Z _ = Refl
 minus_cancel Z (S yp) y_leq_x = void (succNotLTEzero y_leq_x)
@@ -334,6 +300,14 @@ divisibility_decidable a b = let
                         in 
                         lt_contradiction r a p2 a_leq_r
 
--- r1 = am - qa
--- aq - am = r1 
--- a(q-m) = r1
+-- the decidability of primes is relatively simple
+-- we just need to check if 2..p-1 divides p
+-- if any of them divide, we have a contradiction
+-- otherwise, we need to show this means p is prime
+prime_dec_nz: (p: Nat) -> (Not (p=0)) -> Either (Prime p) (Not (Prime p))
+prime_dec_nz = ?omg2
+
+prime_dec: (p: Nat) -> Either (Prime p) (Not (Prime p))
+prime_dec p = case (decide_zero p) of 
+    Left (is_zero) => Right $ \pm => let non_zero = no_prime_is_zero p pm in void $ non_zero is_zero
+    Right (is_nonzero) => prime_dec_nz p is_nonzero

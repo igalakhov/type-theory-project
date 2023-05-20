@@ -211,8 +211,9 @@ my_div (S xp) (S yp) = case my_cmp (S xp) (S yp) of
         in 
         ((q+1, r) ** (step6, r_le_y))
 
-lte_lemma: (n: Nat, m: Nat, k: Nat) -> (m=k) -> LTE n m -> LTE n k
+total lte_lemma: (n: Nat, m: Nat, k: Nat) -> (m=k) -> LTE n m -> LTE n k
 lte_lemma _ Z Z eq lt = lt
+lte_lemma Z _ _ eq lt = LTEZero
 lte_lemma (S np) (S mp) Z eq lt = void $ SIsNotZ eq 
 lte_lemma (S np) Z (S kp) eq lt = void $ SIsNotZ (sym eq)
 lte_lemma (S np) (S mp) (S kp) eq lt = let 
@@ -221,7 +222,7 @@ lte_lemma (S np) (S mp) (S kp) eq lt = let
     LTESucc rec_case
 
 
-lte_add_k: (n: Nat, m: Nat, k: Nat) -> LTE n m -> LTE n (m+k)
+total lte_add_k: (n: Nat, m: Nat, k: Nat) -> LTE n m -> LTE n (m+k)
 lte_add_k n m Z lt = lte_lemma n m (plus m 0) (sym (plusZeroRightNeutral m)) lt
 lte_add_k n m (S kp) lt = let 
     rec_case = lteSuccRight $ lte_add_k n m kp lt 
@@ -300,14 +301,43 @@ divisibility_decidable a b = let
                         in 
                         lt_contradiction r a p2 a_leq_r
 
--- the decidability of primes is relatively simple
--- we just need to check if 2..p-1 divides p
--- if any of them divide, we have a contradiction
--- otherwise, we need to show this means p is prime
-prime_dec_nz: (p: Nat) -> (Not (p=0)) -> Either (Prime p) (Not (Prime p))
-prime_dec_nz = ?omg2
+at_three_at_two: {n: Nat} -> LTE 2 (S (S (S n))) -> LTE 2 (S (S n))
 
-prime_dec: (p: Nat) -> Either (Prime p) (Not (Prime p))
-prime_dec p = case (decide_zero p) of 
-    Left (is_zero) => Right $ \pm => let non_zero = no_prime_is_zero p pm in void $ non_zero is_zero
-    Right (is_nonzero) => prime_dec_nz p is_nonzero
+div_tester_from: (p: Nat, l: Nat) -> LTE 2 l -> LT l p -> Either (x ** ((x `Divides` p), LTE 2 x, LT x p)) ((n: Nat) -> (LTE 2 n) -> (LTE n l) -> Not (n `Divides` p))
+div_tester_from p (S (S Z)) at_two at_p = ?argh
+div_tester_from p l@(S (S (S nl))) at_two at_p = case divisibility_decidable (S (S (S nl))) p of 
+    Left does_divide => Left ((S (S (S nl))) ** (does_divide, at_two, at_p))
+    Right does_not_divide => case div_tester_from p (S (S nl)) (at_three_at_two at_two) (lteSuccLeft at_p) of 
+        Left cand => Left cand
+        Right func => Right $ \cand => \cand_at_least_2 => \cand_at_most_l => case my_cmp cand (S (S (S nl))) of 
+            Left cand_eq_l => \(nm ** pf) => let 
+                step0 = cong {f=\zz => mult zz nm} (sym cand_eq_l)
+                step1 = trans step0 pf
+                in 
+                does_not_divide (nm ** step1)
+            Right (Left (cand_lq_l)) => func cand cand_at_least_2 (fromLteSucc cand_lq_l)
+            Right (Right (cand_gq_l)) => \div => lt_contradiction (S (S (S nl))) cand cand_gq_l cand_at_most_l
+
+dec_int: (n: Nat, l: Nat, r: Nat) -> Either (LT n l) (Either (LTE l n, LT n r) (Either (n=r) (LT r n)))
+
+le_2_zero_one: {n: Nat} -> (LT n 2) -> Either (n=0) (n=1)
+
+zero_not_divide_p: {n: Nat, p: Nat} -> (n=0) -> Not (n `Divides` p)
+
+geq_p_div: {n: Nat, p: Nat} -> (LT p n) -> Not (n `Divides` p)
+
+div_tester: (p: Nat) -> Either (x ** (x `Divides` p, LTE 2 x, LT x p)) ((n: Nat) -> Not (n=1) -> Not (n=p) -> Not (n `Divides` p))
+div_tester (S (S (S np))) = case div_tester_from (S (S (S np))) (S (S np)) (LTESucc (LTESucc LTEZero)) lteRefl of 
+    Left cand => Left cand
+    Right func => Right $ \cand => \cand_not_one => \cand_not_p => \cand_div_p => case dec_int cand 2 (S (S (S np))) of 
+            Left one_or_zero => case le_2_zero_one one_or_zero of 
+                Left is_zero => zero_not_divide_p is_zero cand_div_p
+                Right is_one => cand_not_one is_one
+            Right (Right (Left is_p)) => cand_not_p is_p
+            Right (Right (Right greater_than_p)) => geq_p_div greater_than_p cand_div_p
+            Right (Left (at_least_two, less_than_p)) => func cand at_least_two (fromLteSucc less_than_p) cand_div_p 
+
+prime_case: (p: Nat) -> ((n: Nat) -> Not (n=1) -> Not (n=p) -> Not (n `Divides` p)) -> Prime p
+
+prime_dec_nz: (p: Nat) -> (Not (p=0)) -> (Not (p=1)) -> (LTE 2 p) -> Either (Prime p) (Not (Prime p))
+prime_dec_nz p nz no at_least_two = ?argh

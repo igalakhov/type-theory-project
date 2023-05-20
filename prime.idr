@@ -362,7 +362,10 @@ div_tester_from p l@(S (S (S nl))) at_three at_two at_p = case divisibility_deci
             Right (Left (cand_lq_l)) => func cand cand_at_least_2 (fromLteSucc cand_lq_l)
             Right (Right (cand_gq_l)) => \div => lt_contradiction (S (S (S nl))) cand cand_gq_l cand_at_most_l
 
-geq_p_div: {n: Nat, p: Nat} -> (LT p n) -> Not (n `Divides` p)
+geq_p_div: (n: Nat, p: Nat) -> Not (p=0) -> (LT p n) -> Not (n `Divides` p)
+geq_p_div n p pnz lt (nm ** pf) = case nzmul_geq n nm of 
+    Left is_zero => pnz $ trans (sym pf) is_zero
+    Right leq => lt_contradiction p n lt (lte_lemma n (mult n nm) p pf leq)
 
 zero_not_divide_p: (n: Nat, p: Nat) -> (n=0) -> Not (p=0) -> Not (n `Divides` p)
 zero_not_divide_p n p nz pnz (nm ** (pf)) = pnz $ trans (sym pf) (cong {f=\zz => mult zz nm} nz)
@@ -398,13 +401,11 @@ div_tester (S (S (S np))) at_least_three = case div_tester_from (S (S (S np))) (
                 Left is_zero => zero_not_divide_p cand (S (S (S np))) is_zero (lte_succ_nz (S (S (S np))) at_least_three) cand_div_p
                 Right is_one => cand_not_one is_one
             Right (Right (Left is_p)) => cand_not_p is_p
-            Right (Right (Right greater_than_p)) => geq_p_div greater_than_p cand_div_p
+            Right (Right (Right greater_than_p)) => geq_p_div cand (S (S (S np))) SIsNotZ greater_than_p cand_div_p
             Right (Left (at_least_two, less_than_p)) => func cand at_least_two (fromLteSucc less_than_p) cand_div_p 
 div_tester (S (S Z)) at_least_three = void $ succNotLTEzero $ (fromLteSucc . fromLteSucc) at_least_three
 div_tester (S Z) at_least_three = void $ succNotLTEzero $ fromLteSucc at_least_three
 div_tester Z at_least_three = void $ succNotLTEzero $ at_least_three
-
-prime_case: {p: Nat} -> ((n: Nat) -> Not (n=1) -> Not (n=p) -> Not (n `Divides` p)) -> Prime p
 
 less_not_equal: (x: Nat, y: Nat) -> LT x y -> Not (x=y)
 less_not_equal Z Z lt eq = succNotLTEzero lt
@@ -429,14 +430,41 @@ two_divisors (S (S (S dp))) (x ** eq) = case nzmul_geq (S (S (S dp))) x of
 two_is_prime: Prime 2
 two_is_prime = (\eq => SIsNotZ (cong {f=prev} eq), two_divisors)
 
-total prime_dec_nz: (p: Nat) -> Either (Prime p) (Not (Prime p))
-prime_dec_nz Z = Right $ \is_prime => (no_prime_is_zero Z is_prime) Refl
-prime_dec_nz (S Z) = Right $ \(eq_1, _) => eq_1 Refl
-prime_dec_nz (S (S Z)) = Left two_is_prime
-prime_dec_nz (S (S (S np))) = case div_tester (S (S (S np))) ((LTESucc . LTESucc . LTESucc) LTEZero) of 
+dec_eq: (n: Nat, m: Nat) -> Either (n=m) (Not (n=m))
+dec_eq Z Z = Left Refl
+dec_eq (S x) Z = Right SIsNotZ
+dec_eq Z (S y) = Right (SIsNotZ . sym)
+dec_eq (S x) (S y) = case dec_eq x y of 
+    Left eq => Left (cong {f=S} eq)
+    Right ne => Right (ne . (cong {f=prev}))
+
+prime_case: (p: Nat) -> Not (p=1) -> ((n: Nat) -> Not (n=1) -> Not (n=p) -> Not (n `Divides` p)) -> Prime p
+prime_case p no func = (no, \cand => \cand_div_p => case dec_eq cand 1 of 
+    Left is_one => Left is_one
+    Right not_one => case dec_eq cand p of 
+        Left is_p => Right is_p 
+        Right not_p => void $ func cand not_one not_p cand_div_p
+)
+
+total prime_decidable_with_factor: (p: Nat) -> (LTE 3 p) -> Either (Prime p) (Not (Prime p), (x ** (x `Divides` p, LTE 2 x, LT x p)))
+prime_decidable_with_factor Z at_least_three = void $ succNotLTEzero $ at_least_three
+prime_decidable_with_factor (S Z) at_least_three = void $ succNotLTEzero $ fromLteSucc at_least_three
+prime_decidable_with_factor (S (S Z)) at_least_three = void $ succNotLTEzero $ (fromLteSucc . fromLteSucc) at_least_three
+prime_decidable_with_factor (S (S (S np))) at_least_three = case div_tester (S (S (S np))) at_least_three of 
     Left (divisor ** (divides, at_least_two, less_than_p)) => 
-        Right $ \(not_one, dec_func) =>  
-            case dec_func divisor divides of 
-                Left is_one => succNotLTEzero . fromLteSucc $ lte_lemma 2 divisor 1 is_one at_least_two
-                Right is_p => less_not_equal divisor (S (S (S np))) less_than_p is_p
-    Right func => Left $ prime_case func
+        let 
+            dec_func = \(not_one, dec_func) =>  
+                    case dec_func divisor divides of 
+                        Left is_one => succNotLTEzero . fromLteSucc $ lte_lemma 2 divisor 1 is_one at_least_two
+                        Right is_p => less_not_equal divisor (S (S (S np))) less_than_p is_p
+        in
+            Right (dec_func, (divisor ** (divides, at_least_two, less_than_p)))
+    Right func => Left $ prime_case (S (S (S np))) (\zz => SIsNotZ (cong {f=prev} zz)) func
+
+total prime_decidable: (p: Nat) -> Either (Prime p) (Not (Prime p))
+prime_decidable Z = Right $ \is_prime => (no_prime_is_zero Z is_prime) Refl
+prime_decidable (S Z) = Right $ \(eq_1, _) => eq_1 Refl
+prime_decidable (S (S Z)) = Left two_is_prime
+prime_decidable (S (S (S np))) = case prime_decidable_with_factor (S (S (S np))) ((LTESucc . LTESucc . LTESucc) LTEZero) of 
+    Left is_prime => Left is_prime
+    Right (not_prime, _) => Right not_prime

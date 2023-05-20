@@ -225,7 +225,7 @@ plus_rotate x y z = let
     trans (trans step1 step0) step2
 
 total my_div: (x: Nat, y: Nat) -> Not (y=0) -> (rm ** ((fst rm)*y + (snd rm) = x, LT (snd rm) y))
-my_div x Z nz = ?t1
+my_div x Z nz = void $ nz Refl
 my_div Z (S yp) _ = ((0, 0) ** (Refl, LTESucc $ LTEZero))
 my_div (S xp) (S yp) nz = case my_cmp (S xp) (S yp) of 
     Left x_eq_y => let 
@@ -236,7 +236,7 @@ my_div (S xp) (S yp) nz = case my_cmp (S xp) (S yp) of
     Right (Right y_lt_x) => let 
         y_lte_x = lteSuccLeft y_lt_x
         py_lte_px = fromLteSucc y_lte_x
-        ((q, r) ** (p1, r_le_y)) = my_div (assert_smaller (S xp) (xp - yp)) (S yp) ?t1
+        ((q, r) ** (p1, r_le_y)) = my_div (assert_smaller (S xp) (xp - yp)) (S yp) SIsNotZ
         step0 = minus_cancel (S xp) (S yp) y_lte_x
         step1 = cong {f=\zz => plus zz (mult 1 (S yp))} p1
         step2 = plus_rotate (mult q (S yp)) r (mult 1 (S yp))
@@ -337,13 +337,21 @@ divisibility_decidable a b a_nz = let
                         in 
                         lt_contradiction r a p2 a_leq_r
 
-at_three_at_two: {n: Nat} -> LTE 2 (S (S (S n))) -> LTE 2 (S (S n))
-
 total div_tester_from: (p: Nat, l: Nat) -> LTE 3 p -> LTE 2 l -> LT l p -> Either (x ** ((x `Divides` p), LTE 2 x, LT x p)) ((n: Nat) -> (LTE 2 n) -> (LTE n l) -> Not (n `Divides` p))
-div_tester_from p (S (S Z)) at_three at_two at_p = ?argh
-div_tester_from p l@(S (S (S nl))) at_three at_two at_p = case divisibility_decidable (S (S (S nl))) p ?t1 of 
+div_tester_from p Z _ at_two _ = void $ succNotLTEzero at_two
+div_tester_from p (S Z) _ at_two _ = void $ succNotLTEzero $ fromLteSucc at_two
+div_tester_from p (S (S Z)) at_three at_two at_p = case divisibility_decidable 2 p SIsNotZ of 
+    Left does_divide => Left (2 ** (does_divide, at_two, at_p))
+    Right does_not_divide => Right $ \cand => \cand_at_least_2 => \cand_at_most_l => \(nm ** pf) => case my_cmp cand 2 of 
+        Left is_two => let 
+            step0 = cong {f=\zz => mult zz nm} is_two
+            in
+            does_not_divide (nm ** (trans (sym step0) pf))
+        Right (Left less_two) => lt_contradiction cand 2 less_two cand_at_least_2
+        Right (Right more_two) => lt_contradiction 2 cand more_two cand_at_most_l
+div_tester_from p l@(S (S (S nl))) at_three at_two at_p = case divisibility_decidable (S (S (S nl))) p SIsNotZ of 
     Left does_divide => Left ((S (S (S nl))) ** (does_divide, at_two, at_p))
-    Right does_not_divide => case div_tester_from p (S (S nl)) at_three (at_three_at_two at_two) (lteSuccLeft at_p) of 
+    Right does_not_divide => case div_tester_from p (S (S nl)) at_three ((LTESucc . LTESucc) LTEZero) (lteSuccLeft at_p) of 
         Left cand => Left cand
         Right func => Right $ \cand => \cand_at_least_2 => \cand_at_most_l => case my_cmp cand (S (S (S nl))) of 
             Left cand_eq_l => \(nm ** pf) => let 
@@ -353,40 +361,82 @@ div_tester_from p l@(S (S (S nl))) at_three at_two at_p = case divisibility_deci
                 does_not_divide (nm ** step1)
             Right (Left (cand_lq_l)) => func cand cand_at_least_2 (fromLteSucc cand_lq_l)
             Right (Right (cand_gq_l)) => \div => lt_contradiction (S (S (S nl))) cand cand_gq_l cand_at_most_l
-div_tester_from _ _ _ _ _ = ?t3
-
-dec_int: (n: Nat, l: Nat, r: Nat) -> Either (LT n l) (Either (LTE l n, LT n r) (Either (n=r) (LT r n)))
-
-le_2_zero_one: {n: Nat} -> (LT n 2) -> Either (n=0) (n=1)
-
-zero_not_divide_p: {n: Nat, p: Nat} -> (n=0) -> Not (n `Divides` p)
 
 geq_p_div: {n: Nat, p: Nat} -> (LT p n) -> Not (n `Divides` p)
+
+zero_not_divide_p: (n: Nat, p: Nat) -> (n=0) -> Not (p=0) -> Not (n `Divides` p)
+zero_not_divide_p n p nz pnz (nm ** (pf)) = pnz $ trans (sym pf) (cong {f=\zz => mult zz nm} nz)
+
+le_2_zero_one: (n: Nat) -> (LT n 2) -> Either (n=0) (n=1)
+le_2_zero_one Z _ = Left Refl
+le_2_zero_one (S Z) _ = Right Refl
+le_2_zero_one (S (S x)) lt = void $ succNotLTEzero $ (fromLteSucc . fromLteSucc) lt 
+
+lte_succ_nz: (p: Nat) -> LTE (S x) p -> Not (p=0)
+lte_succ_nz Z lt _ = succNotLTEzero lt
+lte_succ_nz (S x) _ ct = SIsNotZ ct
+
+cmp_two: (n: Nat, l: Nat) -> Either (LT n l) (LTE l n)
+cmp_two n l = case my_cmp n l of 
+    Left eq => Right $ lte_lemma l l n (sym eq) lteRefl
+    Right (Left lq) => Left lq
+    Right (Right gq) => Right $ lteSuccLeft gq
+
+dec_int: (n: Nat, l: Nat, r: Nat) -> Either (LT n l) (Either (LTE l n, LT n r) (Either (n=r) (LT r n))) 
+dec_int n l r = case cmp_two n l of
+    Left c1 => Left c1 
+    Right c1 => case my_cmp n r of 
+        Left eq_r => Right (Right (Left eq_r))
+        Right (Left lq_r) => Right (Left (c1, lq_r))
+        Right (Right gq_r) => Right (Right (Right gq_r))
 
 total div_tester: (p: Nat) -> LTE 3 p -> Either (x ** (x `Divides` p, LTE 2 x, LT x p)) ((n: Nat) -> Not (n=1) -> Not (n=p) -> Not (n `Divides` p))
 div_tester (S (S (S np))) at_least_three = case div_tester_from (S (S (S np))) (S (S np)) at_least_three (LTESucc (LTESucc LTEZero)) lteRefl of 
     Left cand => Left cand
     Right func => Right $ \cand => \cand_not_one => \cand_not_p => \cand_div_p => case dec_int cand 2 (S (S (S np))) of 
-            Left one_or_zero => case le_2_zero_one one_or_zero of 
-                Left is_zero => zero_not_divide_p is_zero cand_div_p
+            Left one_or_zero => case le_2_zero_one cand one_or_zero of 
+                Left is_zero => zero_not_divide_p cand (S (S (S np))) is_zero (lte_succ_nz (S (S (S np))) at_least_three) cand_div_p
                 Right is_one => cand_not_one is_one
             Right (Right (Left is_p)) => cand_not_p is_p
             Right (Right (Right greater_than_p)) => geq_p_div greater_than_p cand_div_p
             Right (Left (at_least_two, less_than_p)) => func cand at_least_two (fromLteSucc less_than_p) cand_div_p 
-div_tester _ _ = ?t1
+div_tester (S (S Z)) at_least_three = void $ succNotLTEzero $ (fromLteSucc . fromLteSucc) at_least_three
+div_tester (S Z) at_least_three = void $ succNotLTEzero $ fromLteSucc at_least_three
+div_tester Z at_least_three = void $ succNotLTEzero $ at_least_three
 
 prime_case: {p: Nat} -> ((n: Nat) -> Not (n=1) -> Not (n=p) -> Not (n `Divides` p)) -> Prime p
 
-less_not_equal: {n: Nat, m: Nat} -> LT n m -> Not (n=m)
+less_not_equal: (x: Nat, y: Nat) -> LT x y -> Not (x=y)
+less_not_equal Z Z lt eq = succNotLTEzero lt
+less_not_equal (S x) Z lt eq = SIsNotZ eq
+less_not_equal Z (S y) lt eq = SIsNotZ (sym eq)
+less_not_equal (S x) (S y) lt eq = less_not_equal x y (fromLteSucc lt) (cong {f=prev} eq) 
+
+two_divisors: (x: Nat) -> x `Divides` 2 -> Either (x=1) (x=2)
+two_divisors Z (x ** eq) = void $ SIsNotZ (sym eq)
+two_divisors (S Z) (x ** eq) = Left Refl
+two_divisors (S (S Z)) (x ** eq) = Right Refl
+two_divisors (S (S (S dp))) (x ** eq) = case nzmul_geq (S (S (S dp))) x of
+        Left eq_zero => let 
+            two_is_zero = trans (sym eq) eq_zero
+            in
+            void $ SIsNotZ two_is_zero
+        Right geq => let 
+            lt_cont = lte_lemma (S (S (S dp))) (plus x (plus x (plus x (mult dp x)))) 2 eq geq
+            in 
+            void $ succNotLTEzero $ (fromLteSucc . fromLteSucc) lt_cont
+
+two_is_prime: Prime 2
+two_is_prime = (\eq => SIsNotZ (cong {f=prev} eq), two_divisors)
 
 total prime_dec_nz: (p: Nat) -> Either (Prime p) (Not (Prime p))
-prime_dec_nz Z = ?c1 
-prime_dec_nz (S Z) = ?c2 
-prime_dec_nz (S (S Z)) = ?c3
-prime_dec_nz (S (S (S np))) = case div_tester (S (S (S np))) ?t1 of 
+prime_dec_nz Z = Right $ \is_prime => (no_prime_is_zero Z is_prime) Refl
+prime_dec_nz (S Z) = Right $ \(eq_1, _) => eq_1 Refl
+prime_dec_nz (S (S Z)) = Left two_is_prime
+prime_dec_nz (S (S (S np))) = case div_tester (S (S (S np))) ((LTESucc . LTESucc . LTESucc) LTEZero) of 
     Left (divisor ** (divides, at_least_two, less_than_p)) => 
         Right $ \(not_one, dec_func) =>  
             case dec_func divisor divides of 
                 Left is_one => succNotLTEzero . fromLteSucc $ lte_lemma 2 divisor 1 is_one at_least_two
-                Right is_p => less_not_equal less_than_p is_p
+                Right is_p => less_not_equal divisor (S (S (S np))) less_than_p is_p
     Right func => Left $ prime_case func

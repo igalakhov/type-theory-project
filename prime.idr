@@ -58,6 +58,20 @@ fequiv_prev Refl = Refl
 fequiv: (x: a, xp: a, y: b, yp: b, f: a -> b -> c) -> (x=xp) -> (y=yp) -> (f x y) = (f xp yp)
 fequiv x xp y yp f x_xp y_yp = trans (cong {f=(`f` y)} x_xp) (cong {f=(f xp)} y_yp)
 
+-- n_divides_a_plus_b and n_divides_a_minus_b: Using fequiv to show properties.
+n_divides_a_plus_b: (a: Nat, b: Nat, n: Nat) -> n `Divides` a -> n `Divides` b -> n `Divides` (a + b)
+n_divides_a_plus_b a b n (ap ** apn_a) (bp ** bpn_b) = let 
+    equiv = fequiv (mult n ap) a (mult n bp) b (\x => \y => x+y) apn_a bpn_b
+    dist = multDistributesOverPlusRight n ap bp
+    in 
+    ((ap+bp) ** (trans dist equiv))
+
+n_divides_a_minus_b: (a: Nat, b: Nat, n: Nat) -> n `Divides` a -> n `Divides` b -> n `Divides` (minus a b)
+n_divides_a_minus_b a b n (ap ** apn_a) (bp ** bpn_b) = let 
+    equiv = fequiv (mult n ap) a (mult n bp) b (\x => \y => (minus x y)) apn_a bpn_b
+    dist = multDistributesOverMinusRight n ap bp
+    in 
+    ((minus ap bp) ** (trans dist equiv))
 
 -- integral_domain: Proof that Nat forms an integral domain, i,e, given x*y = 0 -> x = 0 or y = 0
 -- Note the use of void to handle contradictions.
@@ -67,13 +81,13 @@ integral_domain _ Z _ = Right Refl
 integral_domain (S xp) (S yp) xy_0 = void (SIsNotZ xy_0)
 
 -- eq_zero: Given Nat x and y, x = y implies x - y = 0
+-- x_zero_xx_zero, x_one_xx_one
 -- Another example of void.
 eq_zero: (x: Nat) -> (y: Nat) -> (x=y) -> ((minus x y) = 0)
 eq_zero Z Z x_eq_y = Refl
 eq_zero (S xp) Z x_eq_y = void (SIsNotZ x_eq_y)
 eq_zero Z (S yp) x_eq_y = void (SIsNotZ (sym x_eq_y))
 eq_zero (S xp) (S yp) x_eq_y = eq_zero xp yp (fequiv_prev x_eq_y)
-
 
 x_zero_xx_zero: (x: Nat) -> x=0 -> (x*x) = 0
 x_zero_xx_zero Z x_eq_0 = Refl
@@ -154,21 +168,6 @@ x_squared_not_prime x xx_prime = case (snd xx_prime) x (x_divides_xx x) of
         Right x_eq_1 => (fst xx_prime) (x_one_xx_one x x_eq_1)
 
 
-
-
-n_divides_a_plus_b: (a: Nat, b: Nat, n: Nat) -> n `Divides` a -> n `Divides` b -> n `Divides` (a + b)
-n_divides_a_plus_b a b n (ap ** apn_a) (bp ** bpn_b) = let 
-    equiv = fequiv (mult n ap) a (mult n bp) b (\x => \y => x+y) apn_a bpn_b
-    dist = multDistributesOverPlusRight n ap bp
-    in 
-    ((ap+bp) ** (trans dist equiv))
-
-n_divides_a_minus_b: (a: Nat, b: Nat, n: Nat) -> n `Divides` a -> n `Divides` b -> n `Divides` (minus a b)
-n_divides_a_minus_b a b n (ap ** apn_a) (bp ** bpn_b) = let 
-    equiv = fequiv (mult n ap) a (mult n bp) b (\x => \y => (minus x y)) apn_a bpn_b
-    dist = multDistributesOverMinusRight n ap bp
-    in 
-    ((minus ap bp) ** (trans dist equiv))
 
 divide_product: (a: Nat, b: Nat, c:Nat, d: Nat) -> a `Divides` b -> c `Divides` d -> (a*c) `Divides` (b*d)
 divide_product a b c d (ap ** apa_b) (cp ** cpc_d) = let 

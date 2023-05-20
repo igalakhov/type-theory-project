@@ -371,7 +371,18 @@ div_tester (S (S (S np))) = case div_tester_from (S (S (S np))) (S (S np)) (LTES
             Right (Right (Right greater_than_p)) => geq_p_div greater_than_p cand_div_p
             Right (Left (at_least_two, less_than_p)) => func cand at_least_two (fromLteSucc less_than_p) cand_div_p 
 
-prime_case: (p: Nat) -> ((n: Nat) -> Not (n=1) -> Not (n=p) -> Not (n `Divides` p)) -> Prime p
+prime_case: {p: Nat} -> ((n: Nat) -> Not (n=1) -> Not (n=p) -> Not (n `Divides` p)) -> Prime p
 
-prime_dec_nz: (p: Nat) -> (Not (p=0)) -> (Not (p=1)) -> (LTE 2 p) -> Either (Prime p) (Not (Prime p))
-prime_dec_nz p nz no at_least_two = ?argh
+less_not_equal: {n: Nat, m: Nat} -> LT n m -> Not (n=m)
+
+prime_dec_nz: (p: Nat) -> Either (Prime p) (Not (Prime p))
+prime_dec_nz Z = ?c1 
+prime_dec_nz (S Z) = ?c2 
+prime_dec_nz (S (S Z)) = ?c3
+prime_dec_nz (S (S (S np))) = case div_tester (S (S (S np))) of 
+    Left (divisor ** (divides, at_least_two, less_than_p)) => 
+        Right $ \(not_one, dec_func) =>  
+            case dec_func divisor divides of 
+                Left is_one => succNotLTEzero . fromLteSucc $ lte_lemma 2 divisor 1 is_one at_least_two
+                Right is_p => less_not_equal less_than_p is_p
+    Right func => Left $ prime_case func

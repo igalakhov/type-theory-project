@@ -68,7 +68,6 @@ Num Nat_Num where
 
 plus_zero_left : (right : Nat_Num) -> (Plus 0 right) = right
 plus_zero_left Zero = Refl
--- plus_zero_neutral_left (Succ n) = rewrite plus_zero_neutral_left n in Refl
 
 plus_zero_right : (left : Nat_Num) -> (Plus left 0) = left
 plus_zero_right Zero = Refl

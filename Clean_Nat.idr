@@ -67,7 +67,7 @@ Num Nat_Num where
 -- PUT THIS IN PRESENTATION..
 
 plus_zero_left : (right : Nat_Num) -> (Plus 0 right) = right
-plus_zero_left Zero = Refl
+plus_zero_left n = Refl
 
 plus_zero_right : (left : Nat_Num) -> (Plus left 0) = left
 plus_zero_right Zero = Refl

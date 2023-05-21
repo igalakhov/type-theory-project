@@ -66,9 +66,11 @@ Num Nat_Num where
 --2. +0=
 -- PUT THIS IN PRESENTATION..
 
+total
 plus_zero_left : (right : Nat_Num) -> (Plus 0 right) = right
 plus_zero_left n = Refl
 
+total
 plus_zero_right : (left : Nat_Num) -> (Plus left 0) = left
 plus_zero_right Zero = Refl
 plus_zero_right (Succ n) = rewrite plus_zero_right n in Refl
